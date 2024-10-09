@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Boolean
+from sqlalchemy import Integer, String, Boolean, func
 import random
 
 app = Flask(__name__)
@@ -56,6 +56,14 @@ def get_all():
     all_cafes = [cafe_obj.to_dict() for cafe_obj in all_cafes_ojb]
     return jsonify(all_cafes)
 
+@app.route("/search")
+def get_cafe_at_location():
+    location = request.args.get("loc")
+    cafe_at_location_obj = db.session.execute(db.select(Cafe).where(func.lower(Cafe.location)==location.lower()).order_by(Cafe.name)).scalars().all()
+    if cafe_at_location_obj:
+        cafe_at_location = [cafe.to_dict() for cafe in cafe_at_location_obj]
+        return jsonify(cafe_at_location)
+    return jsonify({"error":{"Not Found": "Sorry, we don't have a cafe at that location."}})
 
 # HTTP GET - Read Record
 
