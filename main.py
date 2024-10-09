@@ -2,19 +2,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Boolean
-
-'''
-Install the required packages first: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from requirements.txt for this project.
-'''
+import random
 
 app = Flask(__name__)
 
@@ -41,6 +29,12 @@ class Cafe(db.Model):
     can_take_calls: Mapped[bool] = mapped_column(Boolean, nullable=False)
     coffee_price: Mapped[str] = mapped_column(String(250), nullable=True)
 
+    def to_dict(self):
+        dictionary = {}
+        for column in self.__table__.columns:
+            dictionary[column.name] = getattr(self, column.name)
+        return dictionary
+
 
 with app.app_context():
     db.create_all()
@@ -49,6 +43,18 @@ with app.app_context():
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/random")
+def get_random_cafe():
+    cafes = db.session.execute(db.select(Cafe)).scalars().all()
+    random_cafe = random.choice(cafes)
+    return jsonify(cafe = random_cafe.to_dict())
+
+@app.route("/all")
+def get_all():
+    all_cafes_ojb = db.session.execute(db.select(Cafe).order_by(Cafe.name)).scalars().all()
+    all_cafes = [cafe_obj.to_dict() for cafe_obj in all_cafes_ojb]
+    return jsonify(all_cafes)
 
 
 # HTTP GET - Read Record
